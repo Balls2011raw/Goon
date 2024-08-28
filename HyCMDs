@@ -1,0 +1,1589 @@
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local screenGui = Instance.new("ScreenGui")
+local textBox = Instance.new("TextBox")
+local executeButton = Instance.new("TextButton")
+local loadingLabel = Instance.new("TextLabel")
+local progressBar = Instance.new("Frame")
+
+-- Cài đặt ScreenGui
+screenGui.Name = "HyCMDs"
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Cài đặt TextBox
+textBox.Parent = screenGui
+textBox.Position = UDim2.new(0, 10, 0, 50)
+textBox.Size = UDim2.new(0, 200, 0, 50)
+textBox.Text = ""
+textBox.PlaceholderText = "Enter Command Here!"
+textBox.ClearTextOnFocus = false
+textBox.BackgroundColor3 = Color3.fromRGB(53, 53, 53)
+textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+textBox.BorderSizePixel = 0
+
+-- Cài đặt Nút Execute
+executeButton.Parent = screenGui
+executeButton.Position = UDim2.new(0, 220, 0, 50)
+executeButton.Size = UDim2.new(0, 100, 0, 50)
+executeButton.Text = "Execute"
+executeButton.BackgroundColor3 = Color3.fromRGB(73, 73, 73)
+executeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+-- Cài đặt Thanh tải
+progressBar.Parent = screenGui
+progressBar.Position = UDim2.new(0, 10, 1, -60)
+progressBar.Size = UDim2.new(0, 200, 0, 10)
+progressBar.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+progressBar.BorderSizePixel = 0
+
+local loadingBar = Instance.new("Frame")
+loadingBar.Parent = progressBar
+loadingBar.Size = UDim2.new(0, 0, 1, 0)
+loadingBar.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+loadingBar.BorderSizePixel = 0
+
+loadingLabel.Parent = screenGui
+loadingLabel.Position = UDim2.new(0, 10, 1, -70)
+loadingLabel.Size = UDim2.new(0, 200, 0, 20)
+loadingLabel.Text = "Loading..."
+loadingLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+
+-- Hiệu ứng animation cho TextBox
+local function animateTextBox()
+    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, -1, true)
+    local goal = { BackgroundColor3 = Color3.fromRGB(200, 200, 200) }
+    local tween = TweenService:Create(textBox, tweenInfo, goal)
+    tween:Play()
+end
+
+-- Hàm split cho chuỗi
+local function split(str, sep)
+    local fields = {}
+    local pattern = string.format("([^%s]+)", sep)
+    str:gsub(pattern, function(c) fields[#fields + 1] = c end)
+    return fields
+end
+
+-- Hàm tìm người chơi gần đúng
+local function findPlayer(name)
+    local bestMatch = nil
+    local shortestDistance = math.huge
+    for _, player in ipairs(Players:GetPlayers()) do
+        local distance = string.len(player.Name) - string.len(name)
+        if distance < shortestDistance and player.Name:lower():find(name:lower(), 1, true) then
+            bestMatch = player
+            shortestDistance = distance
+        end
+    end
+    return bestMatch
+end
+
+-- Danh sách lệnh và script tương ứng
+local commands = {
+    ["hello"] = function()
+        print("hello")
+    end,
+
+    ["freeze"] = function(targetName)
+        local targetPlayer
+        if targetName == "all" then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer then
+                    targetPlayer = player
+                    if targetPlayer and targetPlayer.Character then
+                        local character = targetPlayer.Character
+                        for _, part in pairs(character:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.Anchored = true
+                            end
+                        end
+                    end
+                end
+            end
+        elseif targetName == "friend" then
+            -- Xử lý lệnh cho bạn bè ở đây
+        elseif targetName == "team" then
+            -- Xử lý lệnh cho đội ở đây
+        elseif targetName == "me" or targetName == "" then
+            targetPlayer = LocalPlayer
+        else
+            targetPlayer = findPlayer(targetName)
+        end
+
+        if targetPlayer and targetPlayer.Character then
+            local character = targetPlayer.Character
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Anchored = true
+                end
+            end
+        end
+    end,
+
+    ["unfreeze"] = function(targetName)
+        local targetPlayer
+        if targetName == "all" then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer then
+                    targetPlayer = player
+                    if targetPlayer and targetPlayer.Character then
+                        local character = targetPlayer.Character
+                        for _, part in pairs(character:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.Anchored = false
+                            end
+                        end
+                    end
+                end
+            end
+        elseif targetName == "friend" then
+            -- Xử lý lệnh cho bạn bè ở đây
+        elseif targetName == "team" then
+            -- Xử lý lệnh cho đội ở đây
+        elseif targetName == "me" or targetName == "" then
+            targetPlayer = LocalPlayer
+        else
+            targetPlayer = findPlayer(targetName)
+        end
+
+        if targetPlayer and targetPlayer.Character then
+            local character = targetPlayer.Character
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Anchored = false
+                end
+            end
+        end
+    end,
+
+["speed"] = function(speed)
+    local player = Players.LocalPlayer
+    local character = player.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = tonumber(speed) or 16
+        end
+    end
+end,
+
+["jumppower"] = function(power)
+    local player = Players.LocalPlayer
+    local character = player.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.JumpPower = tonumber(power) or 50
+        end
+    end
+end,
+
+-- Thay đổi góc nhìn (FOV)
+["fov"] = function(value)
+    local camera = workspace.CurrentCamera
+    local newFov = tonumber(value)
+    
+    if newFov and newFov >= 1 and newFov <= 120 then
+        camera.FieldOfView = newFov
+    else
+        print("Giá trị FOV không hợp lệ. Vui lòng nhập giá trị từ 1 đến 120.")
+    end
+end,
+
+-- Lệnh reset: Đặt lại nhân vật của người chơi
+["reset"] = function()
+    local player = Players.LocalPlayer
+    if player and player.Character then
+        player.Character:BreakJoints()  -- Thực hiện đặt lại nhân vật
+    end
+end,
+
+-- Lệnh exit: Thoát trò chơi
+["exit"] = function()
+    game:Shutdown()  -- Lệnh này sẽ tắt trò chơi
+end,
+
+-- Lệnh day: Đặt thời gian trong game thành ban ngày
+["day"] = function()
+    local lighting = game:GetService("Lighting")
+    lighting.TimeOfDay = "14:00:00"  -- Đặt thời gian thành giữa trưa
+end,
+
+-- Lệnh night: Đặt thời gian trong game thành ban đêm
+["night"] = function()
+    local lighting = game:GetService("Lighting")
+    lighting.TimeOfDay = "00:00:00"  -- Đặt thời gian thành giữa đêm
+end,
+
+["lay"] = function()
+    local player = game.Players.LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.Sit = true
+    end
+end,
+
+["sit"] = function()
+    local player = game.Players.LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.Sit = true
+    end
+end,
+
+["say"] = function(message)
+    game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, "All")
+end,
+
+["spam"] = function(message, speed)
+    speed = speed or 1 -- Mặc định tốc độ spam là 1 giây
+    local player = game.Players.LocalPlayer
+    if player and player.Character then
+        while true do
+            game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, "All")
+            wait(speed)
+        end
+    end
+end,
+
+["unspam"] = function()
+    -- Để ngừng lệnh spam, cần phải dừng vòng lặp ở hàm spam. Bạn có thể cần một biến toàn cục để kiểm soát vòng lặp này.
+    -- Tạm thời để trống nếu không có cơ chế dừng vòng lặp spam.
+end,
+
+["spin"] = function(speed)
+    speed = speed or 10 -- Mặc định tốc độ spin là 10
+    local player = game.Players.LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = player.Character.HumanoidRootPart
+        local startTime = tick()
+        game:GetService("RunService").RenderStepped:Connect(function()
+            if player.Character then
+                hrp.CFrame = hrp.CFrame * CFrame.Angles(0, speed * (tick() - startTime), 0)
+            end
+        end)
+    end
+end,
+
+["unspin"] = function()
+    -- Để ngừng lệnh spin, cần phải dừng việc cập nhật CFrame trong hàm spin. Bạn có thể cần một biến toàn cục để kiểm soát vòng lặp này.
+    -- Tạm thời để trống nếu không có cơ chế dừng vòng lặp spin.
+end,
+
+["hideguis"] = function()
+    local player = game.Players.LocalPlayer
+    local playerGui = player:FindFirstChild("PlayerGui")
+    if playerGui then
+        for _, gui in pairs(playerGui:GetChildren()) do
+            if gui:IsA("GuiBase2d") and gui.Name ~= "HyCMDs" then
+                gui.Enabled = false
+            end
+        end
+    end
+end,
+
+["unhideguis"] = function()
+    local player = game.Players.LocalPlayer
+    local playerGui = player:FindFirstChild("PlayerGui")
+    if playerGui then
+        for _, gui in pairs(playerGui:GetChildren()) do
+            if gui:IsA("GuiBase2d") and gui.Name ~= "HyCMDs" then
+                gui.Enabled = true
+            end
+        end
+    end
+end,
+
+["deletealltools"] = function()
+    local backpack = game.Players.LocalPlayer.Backpack
+    for _, item in ipairs(backpack:GetChildren()) do
+        if item:IsA("Tool") then
+            item:Destroy()
+        end
+    end
+end,
+
+["givedevtool"] = function()
+    local player = game.Players.LocalPlayer
+    local devTool = Instance.new("Tool")
+    devTool.Name = "DevTool"
+    devTool.Parent = player.Backpack
+    -- Add further customization for the DevTool here
+end,
+
+["noarms"] = function()
+    local character = game.Players.LocalPlayer.Character
+    if character then
+        local leftArm = character:FindFirstChild("Left Arm") or character:FindFirstChild("LeftHand")
+        local rightArm = character:FindFirstChild("Right Arm") or character:FindFirstChild("RightHand")
+        
+        if leftArm then leftArm:Destroy() end
+        if rightArm then rightArm:Destroy() end
+    end
+end,
+
+["nolegs"] = function()
+    local character = game.Players.LocalPlayer.Character
+    if character then
+        local leftLeg = character:FindFirstChild("Left Leg") or character:FindFirstChild("LeftFoot")
+        local rightLeg = character:FindFirstChild("Right Leg") or character:FindFirstChild("RightFoot")
+        
+        if leftLeg then leftLeg:Destroy() end
+        if rightLeg then rightLeg:Destroy() end
+    end
+end,
+
+["fullbright"] = function()
+    game.Lighting.Brightness = 2
+    game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+    game.Lighting.FogEnd = 1e9
+end,
+
+["fb"] = function()
+    game.Lighting.Brightness = 2
+    game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+    game.Lighting.FogEnd = 1e9
+end,
+
+["serverhop"] = function()
+    local TeleportService = game:GetService("TeleportService")
+    local placeId = game.PlaceId
+    TeleportService:Teleport(placeId, game.Players.LocalPlayer)
+end,
+
+["shop"] = function()
+    local TeleportService = game:GetService("TeleportService")
+    local placeId = game.PlaceId
+    TeleportService:Teleport(placeId, game.Players.LocalPlayer)
+end,
+
+["rejoin"] = function()
+    local TeleportService = game:GetService("TeleportService")
+    local placeId = game.PlaceId
+    local jobId = game.JobId
+    TeleportService:TeleportToPlaceInstance(placeId, jobId, game.Players.LocalPlayer)
+end,
+
+["rj"] = function()
+    local TeleportService = game:GetService("TeleportService")
+    local placeId = game.PlaceId
+    local jobId = game.JobId
+    TeleportService:TeleportToPlaceInstance(placeId, jobId, game.Players.LocalPlayer)
+end,
+
+["gravity"] = function(value)
+    workspace.Gravity = tonumber(value) or 196.2 -- Default gravity in Roblox
+end,
+
+["grav"] = function(value)
+    workspace.Gravity = tonumber(value) or 196.2
+end,
+
+["kick"] = function(reason)
+    local player = game.Players.LocalPlayer
+    if player then
+        player:Kick(reason or "No reason provided.")
+    end
+end,
+
+["disconnect"] = function()
+    local player = game.Players.LocalPlayer
+    if player then
+        player:Kick("Disconnected")
+    end
+end,
+
+["voidreset"] = function()
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+
+    if character then
+        -- Set character's position to the void (far below the map)
+        character:SetPrimaryPartCFrame(CFrame.new(0, -5000, 0))
+        wait(0.1)
+        -- Reset character's health to 0
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.Health = 0
+        end
+    end
+end,
+
+["noroot"] = function()
+    local character = game.Players.LocalPlayer.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        character:FindFirstChild("HumanoidRootPart"):Destroy()
+    end
+end,
+
+["autojump"] = function()
+    _G.autoJumping = true
+    while _G.autoJumping do
+        game.Players.LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        wait(0.1)
+    end
+end,
+
+["unautojump"] = function()
+    _G.autoJumping = false
+end,
+
+["godmode"] = function()
+    local character = game.Players.LocalPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.MaxHealth = math.huge
+            humanoid.Health = math.huge
+        end
+    end
+end,
+
+["deleteplayers"] = function()
+    local playerFolder = game.Players.LocalPlayer
+    if playerFolder then
+        playerFolder:Destroy()
+    end
+end,
+
+["antilag"] = function()
+    -- Giảm đồ họa
+    local settings = game:GetService("Lighting")
+    settings.GlobalShadows = false
+    settings.FogEnd = 9e9
+    settings.Brightness = 0
+
+    -- Vô hiệu hóa các hiệu ứng không cần thiết
+    for _, effect in pairs(settings:GetChildren()) do
+        if effect:IsA("PostEffect") then
+            effect.Enabled = false
+        end
+    end
+
+    -- Giảm số lượng chi tiết vật thể
+    for _, object in pairs(workspace:GetDescendants()) do
+        if object:IsA("Part") or object:IsA("MeshPart") or object:IsA("UnionOperation") then
+            object.Material = Enum.Material.SmoothPlastic
+            object.Reflectance = 0
+        end
+    end
+    
+    -- Vô hiệu hóa các scripts không cần thiết
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("Script") or v:IsA("LocalScript") then
+            v.Disabled = true
+        end
+    end
+
+    -- Giảm render distance
+    local player = game.Players.LocalPlayer
+    if player and player:FindFirstChild("PlayerScripts") then
+        local playerScripts = player:FindFirstChild("PlayerScripts")
+        playerScripts.CameraMaxZoomDistance = 50 -- Điều chỉnh khoảng cách render
+    end
+
+    print("Đã bật chế độ giảm lag.")
+end,
+
+["age"] = function(targetName)
+    -- Hiển thị tuổi người chơi
+    local targetPlayer = findPlayer(targetName)
+    if targetPlayer then
+        print("Tuổi của người chơi " .. targetPlayer.Name .. " là: " .. targetPlayer.AccountAge .. " ngày.")
+    end
+end,
+
+["devmode"] = function()
+    print("No Data")
+end,
+
+["nohead"] = function()
+    local player = game.Players.LocalPlayer
+    if player.Character and player.Character:FindFirstChild("Head") then
+        player.Character.Head:Destroy()
+    end
+end,
+
+["teleportalltome"] = function()
+    local player = game.Players.LocalPlayer
+    local myPosition = player.Character and player.Character.PrimaryPart and player.Character.PrimaryPart.Position
+    if myPosition then
+        for _, otherPlayer in pairs(game.Players:GetPlayers()) do
+            if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character.PrimaryPart then
+                otherPlayer.Character:SetPrimaryPartCFrame(CFrame.new(myPosition))
+            end
+        end
+    end
+end,
+
+["respawn"] = function()
+    local player = Players.LocalPlayer
+    if player and player.Character then
+        player.Character:BreakJoints()  -- Thực hiện hồi sinh nhân vật
+    end
+end,
+
+["health"] = function(value)
+    local player = Players.LocalPlayer
+    if player and player.Character then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.Health = tonumber(value) or humanoid.Health
+        end
+    end
+end,
+
+["fog"] = function(value)
+    local lighting = game:GetService("Lighting")
+    local newFogEnd = tonumber(value) or 1000 -- Giá trị mặc định nếu không nhập giá trị
+    lighting.FogEnd = newFogEnd
+end,
+
+["autoheal"] = function(healRate)
+    healRate = tonumber(healRate) or 10  -- Mặc định giá trị hồi máu là 10
+    local player = game.Players.LocalPlayer
+    if player and player.Character then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            while true do
+                if humanoid.Health < humanoid.MaxHealth then
+                    humanoid.Health = math.min(humanoid.Health + healRate, humanoid.MaxHealth)
+                end
+                wait(0.0001)  -- Cập nhật hồi máu mỗi giây
+            end
+        end
+    end
+end,
+
+-- Lệnh Freecam
+["freecam"] = function()
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if character and character:FindFirstChildOfClass("Humanoid") then
+        local camera = workspace.CurrentCamera
+        if not camera:FindFirstChild("Freecam") then
+            local freecam = Instance.new("Model")
+            freecam.Name = "Freecam"
+            freecam.Parent = camera
+            
+            local camPart = Instance.new("Part")
+            camPart.Name = "CameraPart"
+            camPart.Anchored = true
+            camPart.CanCollide = false
+            camPart.Size = Vector3.new(1,1,1)
+            camPart.Position = camera.CFrame.Position
+            camPart.Parent = freecam
+            
+            camera.CameraSubject = camPart
+            camera.CameraType = Enum.CameraType.Scriptable
+        end
+    end
+end,
+
+-- Lệnh Unfreecam
+["unfreecam"] = function()
+    local player = game.Players.LocalPlayer
+    local camera = workspace.CurrentCamera
+    local freecam = camera:FindFirstChild("Freecam")
+    if freecam then
+        camera.CameraSubject = player.Character:FindFirstChildOfClass("Humanoid")
+        camera.CameraType = Enum.CameraType.Custom
+        freecam:Destroy()
+    end
+end,
+
+-- Lệnh NoAnimation
+["noanimation"] = function()
+    local character = game.Players.LocalPlayer.Character
+    if character then
+        for _,anim in pairs(character:FindFirstChildOfClass("Humanoid"):GetPlayingAnimationTracks()) do
+            anim:Stop()
+        end
+    end
+end,
+
+-- Lệnh healspeed
+["healspeed"] = function(value)
+    local humanoid = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.Health = humanoid.Health + value
+    end
+end,
+
+-- Lệnh MaxHealth
+["maxhealth"] = function(value)
+    local humanoid = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.MaxHealth = value
+        humanoid.Health = math.min(humanoid.Health, value) -- Đảm bảo máu hiện tại không vượt quá mức tối đa
+    end
+end,
+
+-- Lệnh AutoHealthLoss
+["autohealthloss"] = function(value)
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    
+    if humanoid then
+        while true do
+            wait(0.1)
+            humanoid.Health = humanoid.Health - value
+        end
+    end
+end,
+
+-- Lệnh ATL (AutoHealthLoss)
+["atl"] = function(value)
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    
+    if humanoid then
+        while true do
+            wait(0.1)
+            humanoid.Health = humanoid.Health - value
+        end
+    end
+end,
+
+["info"] = function()
+    -- Create the ScreenGui
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "InfoGUI"
+    screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+    -- Create the main Frame for the GUI
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0.5, 0, 0.5, 0)
+    mainFrame.Position = UDim2.new(0.25, 0, 0.25, 0)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
+
+    -- Create the Scroll Frame for the text
+    local scrollFrame = Instance.new("ScrollingFrame")
+    scrollFrame.Size = UDim2.new(1, 0, 1, -50)
+    scrollFrame.Position = UDim2.new(0, 0, 0, 0)
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 50)
+    scrollFrame.BackgroundTransparency = 1
+    scrollFrame.Parent = mainFrame
+
+    -- Create the TextLabel for the information
+    local infoLabel = Instance.new("TextLabel")
+    infoLabel.Size = UDim2.new(1, -10, 0, 10000)
+    infoLabel.Position = UDim2.new(0, 5, 0, 5)
+    infoLabel.Text = [[
+                                                    info:
+Version: B_0.1
+Name Script: HyCMDs
+Creators: ACE1991ACE
+THANK FOR USE MY SCRIPT ^^
+    ]]
+    infoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    infoLabel.BackgroundTransparency = 1
+    infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+    infoLabel.TextYAlignment = Enum.TextYAlignment.Top
+    infoLabel.Parent = scrollFrame
+    infoLabel.TextSize = 10
+
+    -- Create the Close button
+    local closeButton = Instance.new("TextButton")
+    closeButton.Size = UDim2.new(0, 100, 0, 50)
+    closeButton.Position = UDim2.new(1, -110, 1, -60)
+    closeButton.Text = "Close"
+    closeButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.Parent = mainFrame
+
+    closeButton.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+end,
+
+-- Lệnh Invisible
+["invisible"] = function()
+    local character = game.Players.LocalPlayer.Character
+    if character then
+        for _, part in ipairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.Transparency = 1
+                part.CanCollide = false
+            end
+        end
+    end
+end,
+
+-- Lệnh DeleteHyCMDs
+["deletehycmds"] = function()
+    local playerGui = game.Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    if playerGui then
+        for _, gui in ipairs(playerGui:GetChildren()) do
+            if gui.Name == "HyCMDs" then
+                gui:Destroy()
+            end
+        end
+    end
+end,
+
+-- Lệnh Btools
+["btools"] = function()
+    local success, result = pcall(function()
+        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-BTools-12430"))()
+    end)
+    
+    if not success then
+        warn("Không thể thực thi lệnh Btools: " .. result)
+    end
+end,
+
+-- Lệnh FogColor
+["fogcolor"] = function(option)
+    local colors = {
+        [1] = Color3.fromRGB(255, 0, 0),    -- Red
+        [2] = Color3.fromRGB(0, 0, 255),    -- Blue
+        [3] = Color3.fromRGB(0, 255, 0),    -- Green
+        [4] = Color3.fromRGB(0, 0, 0),      -- Black
+        [5] = Color3.fromRGB(255, 255, 0),  -- Yellow
+        [6] = Color3.fromRGB(128, 0, 128),  -- Purple
+        [7] = Color3.fromRGB(0, 255, 255),  -- Cyan
+        [8] = Color3.fromRGB(255, 255, 255),-- White
+        [9] = Color3.fromRGB(139, 69, 19)   -- Sh*t color (Brown)
+    }
+    
+    local index = tonumber(option)
+    local color = colors[index]
+
+    if color then
+        game:GetService("Lighting").FogColor = color
+    else
+        warn("Invalid option. Please choose a number from 1 to 9.")
+    end
+end,
+
+-- Lệnh Unshader
+["unshader"] = function()
+    local lighting = game:GetService("Lighting")
+
+    -- Gỡ bỏ các hiệu ứng đồ họa đã áp dụng
+    local bloom = lighting:FindFirstChild("CustomBloom")
+    if bloom then bloom:Destroy() end
+
+    local colorCorrection = lighting:FindFirstChild("CustomColorCorrection")
+    if colorCorrection then colorCorrection:Destroy() end
+
+    local blur = lighting:FindFirstChild("CustomBlur")
+    if blur then blur:Destroy() end
+end,
+
+-- Lệnh Shader
+["shader"] = function()
+    local lighting = game:GetService("Lighting")
+
+    -- Thêm các hiệu ứng đồ họa để tạo shader
+    local bloom = Instance.new("BloomEffect")
+    bloom.Name = "CustomBloom"
+    bloom.Intensity = 1
+    bloom.Size = 24
+    bloom.Threshold = 0.8
+    bloom.Parent = lighting
+
+    local colorCorrection = Instance.new("ColorCorrectionEffect")
+    colorCorrection.Name = "CustomColorCorrection"
+    colorCorrection.Brightness = 0.1
+    colorCorrection.Contrast = 0.2
+    colorCorrection.Saturation = 0.3
+    colorCorrection.TintColor = Color3.fromRGB(255, 255, 255)
+    colorCorrection.Parent = lighting
+
+    local blur = Instance.new("BlurEffect")
+    blur.Name = "CustomBlur"
+    blur.Size = 10
+    blur.Parent = lighting
+end,
+
+-- Lệnh follow
+["follow"] = function(targetName)
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    local target
+
+    -- Tìm đối tượng với tên gần đúng
+    for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
+        if otherPlayer.Name:lower():match(targetName:lower()) or otherPlayer.DisplayName:lower():match(targetName:lower()) then
+            target = otherPlayer
+            break
+        end
+    end
+
+    if target and target.Character then
+        -- Tạo một kết nối để theo dõi vị trí của đối tượng
+        player.Following = game:GetService("RunService").Heartbeat:Connect(function()
+            character.Humanoid:MoveTo(target.Character.HumanoidRootPart.Position)
+        end)
+    else
+        warn("Không tìm thấy đối tượng hoặc đối tượng không có nhân vật.")
+    end
+end,
+
+["fakedata"] = function(value)
+    local dataStores = game:GetService("DataStoreService"):GetDataStores()
+    
+    for _, dataStore in pairs(dataStores) do
+        for key, _ in pairs(dataStore:GetAsync("AllKeys")) do
+            dataStore:SetAsync(key, value)
+        end
+    end
+    print("Tất cả dữ liệu đã được thiết lập thành giá trị: " .. tostring(value))
+end,
+
+["time"] = function(timeString)
+    local hours, minutes, seconds = timeString:match("^(%d+):(%d+):(%d+)$")
+    if hours and minutes and seconds then
+        game.Lighting.TimeOfDay = string.format("%02d:%02d:%02d", hours, minutes, seconds)
+        print("Thời gian trong game đã được đặt thành: " .. game.Lighting.TimeOfDay)
+    else
+        warn("Định dạng thời gian không hợp lệ. Vui lòng sử dụng định dạng HH:MM:SS.")
+    end
+end,
+
+["command"] = function()
+    -- Create the ScreenGui
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "command2"
+    screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+    -- Create the main Frame for the GUI
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0.5, 0, 0.5, 0)
+    mainFrame.Position = UDim2.new(0.25, 0, 0.25, 0)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
+
+    -- Create the Scroll Frame for the buttons
+    local scrollFrame = Instance.new("ScrollingFrame")
+    scrollFrame.Size = UDim2.new(1, 0, 1, -50)
+    scrollFrame.Position = UDim2.new(0, 0, 0, 0)
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 250)
+    scrollFrame.BackgroundTransparency = 1
+    scrollFrame.Parent = mainFrame
+
+    -- Create a Frame for buttons
+    local buttonFrame = Instance.new("Frame")
+    buttonFrame.Size = UDim2.new(1, 0, 0, 250)
+    buttonFrame.Position = UDim2.new(0, 0, 0, 0)
+    buttonFrame.BackgroundTransparency = 1
+    buttonFrame.Parent = scrollFrame
+
+    -- Create a TextLabel to show command details
+    local detailLabel = Instance.new("TextLabel")
+    detailLabel.Size = UDim2.new(0, 200, 0, 50)
+    detailLabel.Position = UDim2.new(0, 0, 0, 330)
+    detailLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    detailLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    detailLabel.TextSize = 14
+    detailLabel.Text = ""
+    detailLabel.TextWrapped = true
+    detailLabel.Parent = screenGui
+
+    local function createButton(text, description)
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(1, -10, 0, 40)
+        button.Position = UDim2.new(0, 5, 0, 5 + (40 * (#buttonFrame:GetChildren())))
+        button.Text = text
+        button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        button.Parent = buttonFrame
+
+        button.MouseButton1Click:Connect(function()
+            detailLabel.Text = description
+        end)
+    end
+
+    -- Add buttons for commands
+    createButton("⭐ FullBright/FB", "Light it all up!")
+    createButton("⭐ Speed [Value]", "Speed up!\nExample: Speed 50")
+    createButton("⭐ Jumppower [Value]", "Makes you jump higher!\nExample: Jumppower 50")
+    createButton("⭐ Freeze [Name]", "Freeze someone for guilt\nExample: Freeze {Me/All/Friend/Name/Team}")
+    createButton("⭐ Unfreeze [Name]", "Cancel Freeze")
+
+    -- Create the Close button
+    local closeButton = Instance.new("TextButton")
+    closeButton.Size = UDim2.new(0, 100, 0, 50)
+    closeButton.Position = UDim2.new(1, -110, 1, -60)
+    closeButton.Text = "Close"
+    closeButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.Parent = mainFrame
+
+    closeButton.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+end,
+
+["hatsize"] = function(size)
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+
+    if not character then
+        warn("Không tìm thấy nhân vật của bạn.")
+        return
+    end
+
+    local targetSize = tonumber(size)
+
+    if not targetSize then
+        warn("Giá trị kích thước không hợp lệ. Vui lòng nhập một số hợp lệ.")
+        return
+    end
+
+    -- Tìm mũ trong nhân vật
+    local hat = character:FindFirstChildOfClass("Accessory")
+    if hat then
+        local handle = hat:FindFirstChild("Handle")
+        if handle then
+            -- Cập nhật kích thước mũ
+            handle.Size = Vector3.new(targetSize, targetSize, targetSize)
+
+            -- Cố định mũ ngay tại cổ
+            local head = character:FindFirstChild("Head")
+            if head then
+                -- Cập nhật CFrame của mũ để giữ nó ngay tại cổ
+                handle.CFrame = head.CFrame * CFrame.new(0, -head.Size.Y / 2 - handle.Size.Y / 2, 0)
+            end
+        end
+    else
+        warn("Không tìm thấy mũ trên đầu của bạn.")
+    end
+
+    print("Kích thước mũ của bạn đã được thay đổi thành: " .. tostring(targetSize))
+end,
+
+["headsize"] = function(size)
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    
+    if not character then
+        warn("Không tìm thấy nhân vật của bạn.")
+        return
+    end
+    
+    local targetSize = tonumber(size)
+    
+    if not targetSize then
+        warn("Giá trị kích thước không hợp lệ. Vui lòng nhập một số hợp lệ.")
+        return
+    end
+    
+    -- Thay đổi kích thước đầu
+    local head = character:FindFirstChild("Head")
+    if head then
+        head.Size = Vector3.new(targetSize, targetSize, targetSize)
+    end
+
+    -- Thay đổi kích thước mũ nếu có
+    local hat = character:FindFirstChildOfClass("Accessory")
+    if hat then
+        local handle = hat:FindFirstChild("Handle")
+        if handle then
+            handle.Size = Vector3.new(targetSize, targetSize, targetSize)
+        end
+    end
+    
+    print("Kích thước đầu của bạn đã được thay đổi thành: " .. tostring(targetSize))
+end,
+
+["allpartinuncollide"] = function()
+    for _, part in ipairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") and not part.CanCollide then
+            part.CanCollide = true
+        end
+    end
+    print("Tất cả các part không va chạm đã được chuyển sang va chạm.")
+end,
+
+["apiuc"] = function()
+    for _, part in ipairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") and not part.CanCollide then
+            part.CanCollide = true
+        end
+    end
+    print("Tất cả các part không va chạm đã được chuyển sang va chạm.")
+end,
+
+["uninvisiblepart"] = function()
+    for _, part in ipairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Transparency = 0
+        end
+    end
+    print("Tất cả các part đã được phục hồi hiển thị.")
+end,
+
+["uninvpart"] = function()
+    for _, part in ipairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Transparency = 0
+        end
+    end
+    print("Tất cả các part đã được phục hồi hiển thị.")
+end,
+
+["invisiblepart"] = function()
+    for _, part in ipairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Transparency = 1
+        end
+    end
+    print("Tất cả các part đã được làm tàng hình.")
+end,
+
+["invpart"] = function()
+    for _, part in ipairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Transparency = 1
+        end
+    end
+    print("Tất cả các part đã được làm tàng hình.")
+end,
+
+["addtools"] = function(name_carryable_display_color)
+    local players = game:GetService("Players")
+    local localPlayer = players.LocalPlayer
+    local backpack = localPlayer:FindFirstChildOfClass("Backpack")
+
+    if backpack then
+        -- Parse the input parameters
+        local split = string.split(name_carryable_display_color, "_")
+        local toolName = split[1]:gsub("#2d", " ")  -- Replace #2d with actual space
+        local carryable = split[2] == "True"
+        local displayPart = split[3] == "True"
+        local color = split[4]
+
+        -- Create the new tool
+        local tool = Instance.new("Tool")
+        tool.Name = toolName
+        tool.RequiresHandle = carryable
+        tool.CanBeDropped = carryable
+        tool.Parent = backpack
+
+        -- Optionally create the display part
+        if displayPart then
+            local handle = Instance.new("Part")
+            handle.Size = Vector3.new(1, 1, 1)
+            handle.Color = BrickColor.new(color).Color
+            handle.Name = "Handle"
+            handle.Parent = tool
+            tool.GripPos = Vector3.new(0, -0.5, 0)
+        end
+
+        print("Đã tạo công cụ mới: " .. toolName)
+    else
+        print("Không tìm thấy ba lô của người chơi.")
+    end
+end,
+
+["copytools"] = function(target)
+    local players = game:GetService("Players")
+    local localPlayer = players.LocalPlayer
+    local targetPlayer = nil
+
+    if target:lower() == "me" then
+        targetPlayer = localPlayer
+    else
+        for _, player in ipairs(players:GetPlayers()) do
+            if player.Name:lower():find(target:lower()) or player.DisplayName:lower():find(target:lower()) then
+                targetPlayer = player
+                break
+            end
+        end
+    end
+
+    if targetPlayer then
+        local backpack = localPlayer:FindFirstChildOfClass("Backpack")
+        local targetBackpack = targetPlayer:FindFirstChildOfClass("Backpack")
+        
+        if backpack and targetBackpack then
+            for _, tool in ipairs(targetBackpack:GetChildren()) do
+                if tool:IsA("Tool") then
+                    tool:Clone().Parent = backpack
+                end
+            end
+            print("Đã sao chép tất cả công cụ từ " .. targetPlayer.Name .. ".")
+        end
+    else
+        print("Không tìm thấy người chơi với tên hoặc tên hiển thị gần đúng là '" .. target .. "'.")
+    end
+end,
+
+-- Lệnh Goto
+["goto"] = function(targetPlayer)
+    local localPlayer = game.Players.LocalPlayer
+    local target = getPlayer(targetPlayer)
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        localPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+    end
+end,
+
+-- Lệnh AutoMissed
+["automissed"] = function()
+    local localPlayer = game.Players.LocalPlayer
+    if not _G.autoMissedConnection then
+        _G.autoMissedConnection = game:GetService("RunService").Heartbeat:Connect(function()
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local distance = (player.Character.HumanoidRootPart.Position - localPlayer.Character.HumanoidRootPart.Position).Magnitude
+                    if distance < 10 and distance > 5 then
+                        local newPosition = localPlayer.Character.HumanoidRootPart.Position + Vector3.new(math.random(-10,10), 0, math.random(-10,10))
+                        localPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(newPosition)
+                    end
+                end
+            end
+        end)
+    end
+end,
+
+-- Lệnh UnAutoMissed
+["unautomissed"] = function()
+    if _G.autoMissedConnection then
+        _G.autoMissedConnection:Disconnect()
+        _G.autoMissedConnection = nil
+    end
+end,
+
+-- Lệnh Unfreecam2
+["unfreecam2"] = function()
+    -- Ngắt kết nối script Freecam2
+    local freecamScript = game.Workspace:FindFirstChild("FreecamScript") or game.Players.LocalPlayer.PlayerScripts:FindFirstChild("FreecamScript")
+    if freecamScript then
+        freecamScript:Destroy()
+    end
+
+    -- Đảm bảo nhân vật không còn bị đóng băng
+    local character = game.Players.LocalPlayer.Character
+    if character then
+        for _, part in ipairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.Anchored = false
+            end
+        end
+    end
+
+    -- Đặt lại camera để có thể nhìn xung quanh
+    local cam = workspace.CurrentCamera
+    cam.CameraType = Enum.CameraType.Custom
+end,
+
+-- Lệnh Freecam2
+["freecam2"] = function()
+    local cam = workspace.CurrentCamera
+    local UIS = game:GetService("UserInputService")
+    local RS = game:GetService("RunService")
+    local onMobile = not UIS.KeyboardEnabled
+    local keysDown = {}
+    local rotating = false
+
+    if not game:IsLoaded() then game.Loaded:Wait() end
+
+    cam.CameraType = Enum.CameraType.Scriptable
+
+    local speed = 5
+    local sens = .3
+    speed /= 10
+    if onMobile then sens *= 2 end
+
+    -- Đóng băng nhân vật
+    local character = game.Players.LocalPlayer.Character
+    if character then
+        for _, part in ipairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.Anchored = true
+            end
+        end
+    end
+
+    local function renderStepped()
+        if rotating then
+            local delta = UIS:GetMouseDelta()
+            local cf = cam.CFrame
+            local yAngle = cf:ToEulerAnglesXYZ()
+            local newAmount = math.deg(yAngle) + delta.Y
+            if newAmount > 65 or newAmount < -65 then
+                if not (yAngle < 0 and delta.Y < 0) and not (yAngle > 0 and delta.Y > 0) then
+                    delta = Vector2.new(delta.X, 0)
+                end
+            end
+            cf *= CFrame.Angles(-math.rad(delta.Y), 0, 0)
+            cf = CFrame.Angles(0, -math.rad(delta.X), 0) * (cf - cf.Position) + cf.Position
+            cf = CFrame.lookAt(cf.Position, cf.Position + cf.LookVector)
+            if delta ~= Vector2.new(0, 0) then cam.CFrame = cam.CFrame:Lerp(cf, sens) end
+            UIS.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition
+        else
+            UIS.MouseBehavior = Enum.MouseBehavior.Default
+        end
+
+        if keysDown["Enum.KeyCode.W"] then
+            cam.CFrame *= CFrame.new(Vector3.new(0, 0, -speed))
+        end
+        if keysDown["Enum.KeyCode.A"] then
+            cam.CFrame *= CFrame.new(Vector3.new(-speed, 0, 0))
+        end
+        if keysDown["Enum.KeyCode.S"] then
+            cam.CFrame *= CFrame.new(Vector3.new(0, 0, speed))
+        end
+        if keysDown["Enum.KeyCode.D"] then
+            cam.CFrame *= CFrame.new(Vector3.new(speed, 0, 0))
+        end
+    end
+
+    RS.RenderStepped:Connect(renderStepped)
+
+    local validKeys = {"Enum.KeyCode.W", "Enum.KeyCode.A", "Enum.KeyCode.S", "Enum.KeyCode.D"}
+
+    UIS.InputBegan:Connect(function(Input)
+        for _, key in pairs(validKeys) do
+            if key == tostring(Input.KeyCode) then
+                keysDown[key] = true
+            end
+        end
+        if Input.UserInputType == Enum.UserInputType.MouseButton2 or (Input.UserInputType == Enum.UserInputType.Touch and UIS:GetMouseLocation().X > (cam.ViewportSize.X / 2)) then
+            rotating = true
+        end
+        if Input.UserInputType == Enum.UserInputType.Touch then
+            if Input.Position.X < cam.ViewportSize.X / 2 then
+                touchPos = Input.Position
+            end
+        end
+    end)
+
+    UIS.InputEnded:Connect(function(Input)
+        for key, v in pairs(keysDown) do
+            if key == tostring(Input.KeyCode) then
+                keysDown[key] = false
+            end
+        end
+        if Input.UserInputType == Enum.UserInputType.MouseButton2 or (Input.UserInputType == Enum.UserInputType.Touch and UIS:GetMouseLocation().X > (cam.ViewportSize.X / 2)) then
+            rotating = false
+        end
+        if Input.UserInputType == Enum.UserInputType.Touch and touchPos then
+            if Input.Position.X < cam.ViewportSize.X / 2 then
+                touchPos = nil
+                keysDown["Enum.KeyCode.W"] = false
+                keysDown["Enum.KeyCode.A"] = false
+                keysDown["Enum.KeyCode.S"] = false
+                keysDown["Enum.KeyCode.D"] = false
+            end
+        end
+    end)
+
+    UIS.TouchMoved:Connect(function(input)
+        if touchPos then
+            if input.Position.X < cam.ViewportSize.X / 2 then
+                if input.Position.Y < touchPos.Y then
+                    keysDown["Enum.KeyCode.W"] = true
+                    keysDown["Enum.KeyCode.S"] = false
+                else
+                    keysDown["Enum.KeyCode.W"] = false
+                    keysDown["Enum.KeyCode.S"] = true
+                end
+                if input.Position.X < (touchPos.X - 15) then
+                    keysDown["Enum.KeyCode.A"] = true
+                    keysDown["Enum.KeyCode.D"] = false
+                elseif input.Position.X > (touchPos.X + 15) then
+                    keysDown["Enum.KeyCode.A"] = false
+                    keysDown["Enum.KeyCode.D"] = true
+                else
+                    keysDown["Enum.KeyCode.A"] = false
+                    keysDown["Enum.KeyCode.D"] = false
+                end
+            end
+        end
+    end)
+end,
+
+["fixcam"] = function()
+    local cam = workspace.CurrentCamera
+    cam.CameraType = Enum.CameraType.Custom
+    cam.CameraSubject = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+    cam.FieldOfView = 70 -- Thiết lập lại FOV mặc định
+    cam.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 5, -10)
+    game.Players.LocalPlayer.CameraMaxZoomDistance = 128
+    game.Players.LocalPlayer.CameraMinZoomDistance = 0.5
+end,
+
+["tptool"] = function()
+loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Teleport-tool-7095"))()
+end,
+
+["smoothcamera"] = function()
+loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Smooth-3rd-Person-Camera-7413"))()
+end,
+
+-- Lệnh AntiShakeCamera
+["antishakecamera"] = function()
+    local cam = workspace.CurrentCamera
+    if not cam:FindFirstChild("AntiShake") then
+        local antiShake = Instance.new("BodyGyro")
+        antiShake.Name = "AntiShake"
+        antiShake.Parent = cam
+        antiShake.MaxTorque = Vector3.new(4000, 4000, 4000)
+        antiShake.CFrame = cam.CFrame
+        antiShake.P = 10000
+        antiShake.D = 5000
+        antiShake.CFrame = cam.CFrame
+    end
+end,
+
+-- Viết tắt AntiShakeCamera
+["antishcam"] = function()
+    local cam = workspace.CurrentCamera
+    if not cam:FindFirstChild("AntiShake") then
+        local antiShake = Instance.new("BodyGyro")
+        antiShake.Name = "AntiShake"
+        antiShake.Parent = cam
+        antiShake.MaxTorque = Vector3.new(4000, 4000, 4000)
+        antiShake.CFrame = cam.CFrame
+        antiShake.P = 10000
+        antiShake.D = 5000
+        antiShake.CFrame = cam.CFrame
+    end
+end,
+
+["worldrgb"] = function(speed)
+    local player = game.Players.LocalPlayer
+    local runService = game:GetService("RunService")
+    local colorIndex = 0
+    local colors = {
+        Color3.fromRGB(255, 0, 0),   -- Đỏ
+        Color3.fromRGB(255, 165, 0), -- Cam
+        Color3.fromRGB(255, 255, 0), -- Vàng
+        Color3.fromRGB(0, 255, 0),   -- Xanh lá
+        Color3.fromRGB(0, 0, 255),   -- Xanh dương
+        Color3.fromRGB(75, 0, 130),  -- Chàm
+        Color3.fromRGB(238, 130, 238) -- Tím
+    }
+
+    local function changeColor()
+        colorIndex = (colorIndex % #colors) + 1
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Color = colors[colorIndex]
+            end
+        end
+    end
+
+    player:SetAttribute("WorldRGBActive", true)
+
+    runService:BindToRenderStep("WorldRGB", 0, function()
+        if player:GetAttribute("WorldRGBActive") then
+            changeColor()
+            wait(speed)
+        else
+            runService:UnbindFromRenderStep("WorldRGB")
+        end
+    end)
+end,
+
+["unworldrgb"] = function()
+    local player = game.Players.LocalPlayer
+    player:SetAttribute("WorldRGBActive", false)
+
+    -- Đặt lại màu mặc định cho tất cả các part trong workspace
+    for _, part in pairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Color = part.BrickColor.Color
+        end
+    end
+end,
+
+["unesp"] = function()
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player.Character then
+            for _, child in ipairs(player.Character:GetChildren()) do
+                if child:IsA("Highlight") then
+                    child:Destroy()
+                end
+            end
+        end
+    end
+    
+    print("ESP disabled.")
+end,
+
+["esp"] = function()
+    local function createESP(player)
+        local highlight = Instance.new("Highlight")
+        highlight.Adornee = player.Character
+        highlight.FillTransparency = 1
+        highlight.OutlineColor = Color3.fromRGB(255, 0, 0)  -- Màu viền (đỏ)
+        highlight.Parent = player.Character
+    end
+
+    -- Áp dụng ESP cho tất cả các người chơi hiện tại
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character then
+            createESP(player)
+        end
+    end
+
+    -- Áp dụng ESP cho bất kỳ người chơi mới nào tham gia
+    game.Players.PlayerAdded:Connect(function(player)
+        player.CharacterAdded:Connect(function()
+            createESP(player)
+        end)
+    end)
+    
+    print("ESP enabled.")
+end,
+
+["disable"] = function(feature)
+    local coreGui = game:GetService("StarterGui")
+
+    if feature == "health" then
+        coreGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+    elseif feature == "inventory" then
+        coreGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
+    elseif feature == "emote" then
+        coreGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, false)
+    elseif feature == "reset" then
+        coreGui:SetCore("ResetButtonCallback", false)
+    elseif feature == "playerlist" then
+        coreGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+    elseif feature == "chat" then
+        coreGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+    else
+        warn("Invalid feature specified.")
+    end
+
+    print(feature .. " disabled.")
+end,
+
+["enable"] = function(feature)
+    local coreGui = game:GetService("StarterGui")
+
+    if feature == "health" then
+        coreGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, true)
+    elseif feature == "inventory" then
+        coreGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, true)
+    elseif feature == "emote" then
+        coreGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, true)
+    elseif feature == "reset" then
+        coreGui:SetCore("ResetButtonCallback", true)
+    elseif feature == "playerlist" then
+        coreGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
+    elseif feature == "chat" then
+        coreGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
+    else
+        warn("Invalid feature specified.")
+    end
+
+    print(feature .. " enabled.")
+end,
+
+["kill"] = function(target)
+    local players = game:GetService("Players")
+
+    local function killPlayer(player)
+        if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.Health = 0
+        end
+    end
+
+    if target == "all" then
+        for _, player in ipairs(players:GetPlayers()) do
+            killPlayer(player)
+        end
+    elseif target == "me" then
+        killPlayer(players.LocalPlayer)
+    elseif target == "team" then
+        local team = players.LocalPlayer.Team
+        for _, player in ipairs(players:GetPlayers()) do
+            if player.Team == team then
+                killPlayer(player)
+            end
+        end
+    elseif target == "friend" then
+        for _, player in ipairs(players:GetPlayers()) do
+            if player:IsFriendsWith(players.LocalPlayer.UserId) then
+                killPlayer(player)
+            end
+        end
+    else
+        for _, player in ipairs(players:GetPlayers()) do
+            if player.Name:lower():find(target:lower()) or player.DisplayName:lower():find(target:lower()) then
+                killPlayer(player)
+            end
+        end
+    end
+
+    print("Executed kill command on target: " .. target)
+end,
+}
+
+-- Hàm xử lý lệnh
+local function processCommand(commandText)
+    local parts = split(commandText:lower():match("^%s*(.-)%s*$"), " ")
+    local command = parts[1]
+    local targetName = table.concat(parts, " ", 2) -- Lấy phần còn lại làm tên mục tiêu
+
+    if command ~= "" and commands[command] then
+        -- Hiển thị thanh tải từ 0-100%
+        local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.In)
+        local goal = { Size = UDim2.new(1, 0, 1, 0) }
+        local tween = TweenService:Create(loadingBar, tweenInfo, goal)
+        tween:Play()
+
+        tween.Completed:Connect(function()
+            loadingLabel.Text = ""
+            commands[command](targetName)
+            textBox.Text = ""
+            -- Reset thanh tải
+            loadingBar.Size = UDim2.new(0, 0, 1, 0)
+        end)
+    else
+        loadingLabel.Text = "Invalid Command! Enter 'command' to learn the commands!. Other: Info"
+        loadingLabel.TextColor3 = Color3.fromRGB(255,0,0)
+        loadingLabel.Position = UDim2.new(0, 10, 0, 106)
+        loadingLabel.Size = UDim2.new(0, 310, 0, 20)
+    end
+end
+
+executeButton.MouseButton1Click:Connect(function()
+    processCommand(textBox.Text)
+end)
+
+textBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        processCommand(textBox.Text)
+    end
+end)
+
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+for _, gui in pairs(playerGui:GetChildren()) do
+    if gui:IsA("ScreenGui") and gui.Name:find("HyCMDs") then
+        gui.ResetOnSpawn = false
+    end
+end
+
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+while true do
+    local hyCMDsGuis = {}
+
+    for _, gui in pairs(playerGui:GetChildren()) do
+        if gui:IsA("ScreenGui") and gui.Name:find("HyCMDs") then
+            table.insert(hyCMDsGuis, gui)
+        end
+    end
+
+    if #hyCMDsGuis > 1 then
+        for i = 2, #hyCMDsGuis do
+            hyCMDsGuis[i]:Destroy()
+        end
+    end
+
+    wait(0)  
+en
